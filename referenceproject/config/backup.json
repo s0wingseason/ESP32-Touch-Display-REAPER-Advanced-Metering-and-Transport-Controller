@@ -1,0 +1,42 @@
+{
+    "display": {
+        "selectedMonitor": 0,
+        "fullscreen": true,
+        "alwaysOnTop": true
+    },
+    "theme": {
+        "preset": "newfront-dark",
+        "background": "#0d0d12",
+        "accentPrimary": "#FF4D6D",
+        "accentSecondary": "#4DEDAB",
+        "textPrimary": "#FFFFFF",
+        "textSecondary": "#8B8BA3"
+    },
+    "typography": {
+        "fontFamily": "Inter",
+        "statusSize": 140,
+        "metadataSize": 28,
+        "fontWeight": 600
+    },
+    "effects": {
+        "glowIntensity": 0.8,
+        "animationSpeed": 1.0,
+        "particlesEnabled": true
+    },
+    "visibility": {
+        "timecode": true,
+        "barsBeats": true,
+        "projectName": true,
+        "regionName": true,
+        "tempo": false,
+        "dateTime": true,
+        "sessionTimer": true
+    },
+    "studio": {
+        "name": "Falcon Studios",
+        "engineer": ""
+    },
+    "network": {
+        "port": 9999
+    }
+}

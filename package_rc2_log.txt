@@ -1,0 +1,131 @@
+RC2 Package started: Tue 06/23/2026  2:48:18.83 
+Inno Setup 6 Command-Line Compiler
+Copyright (C) 1997-2026 Jordan Russell. All rights reserved.
+Portions Copyright (C) 2000-2026 Martijn Laan. All rights reserved.
+Portions Copyright (C) 2001-2004 Alex Yackimoff. All rights reserved.
+https://www.innosetup.com
+
+Compiler engine version: Inno Setup 6.7.0
+Non-commercial use only
+
+Preprocessing
+   Reading file: C:\Program Files (x86)\Inno Setup 6\ISPPBuiltins.iss
+Parsing [Setup] section, line 22
+Parsing [Setup] section, line 23
+Parsing [Setup] section, line 24
+Parsing [Setup] section, line 25
+Parsing [Setup] section, line 26
+Parsing [Setup] section, line 27
+Parsing [Setup] section, line 28
+Parsing [Setup] section, line 29
+Parsing [Setup] section, line 30
+Parsing [Setup] section, line 31
+Parsing [Setup] section, line 32
+Parsing [Setup] section, line 33
+Parsing [Setup] section, line 34
+Parsing [Setup] section, line 35
+Parsing [Setup] section, line 36
+Parsing [Setup] section, line 37
+Parsing [Setup] section, line 38
+Parsing [Setup] section, line 39
+Parsing [Setup] section, line 40
+Parsing [Setup] section, line 41
+Parsing [Setup] section, line 42
+Parsing [Setup] section, line 43
+Parsing [Setup] section, line 44
+Parsing [Setup] section, line 45
+Parsing [Setup] section, line 46
+Parsing [Setup] section, line 47
+Parsing [Setup] section, line 48
+Parsing [Setup] section, line 49
+Parsing [Setup] section, line 51
+Parsing [Setup] section, line 52
+Parsing [Setup] section, line 53
+Reading file (LicenseFile)
+Reading file (InfoBeforeFile)
+Reading file (WizardImageFile)
+Reading file (WizardSmallImageFile)
+Preparing Setup program executable
+   Verification successful
+   Updating icons (Setup.e32)
+   Updating version info (Setup.e32)
+Determining language code pages
+Parsing [Languages] section, line 56
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+   Messages in script file
+Reading default messages from Default.isl
+Parsing [Languages] section, line 56
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+Parsing [LangOptions], [Messages], and [CustomMessages] sections
+   Messages in script file
+Reading [Code] section
+Parsing [Types] section, line 59
+Parsing [Types] section, line 60
+Parsing [Types] section, line 61
+Parsing [Components] section, line 64
+Parsing [Components] section, line 65
+Parsing [Components] section, line 66
+Parsing [Components] section, line 67
+Parsing [Components] section, line 68
+Parsing [Tasks] section, line 71
+Parsing [Tasks] section, line 72
+Parsing [Tasks] section, line 73
+Parsing [Dirs] section, line 101
+Parsing [Icons] section, line 105
+Parsing [Icons] section, line 106
+Parsing [Icons] section, line 107
+Parsing [Icons] section, line 108
+Parsing [Icons] section, line 109
+Parsing [Icons] section, line 110
+Parsing [Icons] section, line 112
+Parsing [UninstallDelete] section, line 128
+Parsing [UninstallDelete] section, line 129
+Parsing [Run] section, line 116
+Parsing [Run] section, line 119
+Parsing [Run] section, line 122
+Parsing [Run] section, line 125
+Parsing [Files] section, line 77
+Parsing [Files] section, line 78
+   Reading version info: C:\dev\mb\installer\..\relay_config.txt
+Parsing [Files] section, line 79
+Parsing [Files] section, line 80
+Parsing [Files] section, line 81
+Parsing [Files] section, line 82
+Parsing [Files] section, line 83
+Parsing [Files] section, line 86
+Parsing [Files] section, line 87
+Parsing [Files] section, line 90
+Parsing [Files] section, line 91
+Parsing [Files] section, line 92
+Parsing [Files] section, line 95
+Parsing [Files] section, line 98
+Compiling [Code] section
+Creating setup files
+   Verification successful
+   Updating icons (Setup.exe)
+   Compressing: C:\dev\mb\installer\..\meterbridge_relay.py
+   Compressing: C:\dev\mb\installer\..\relay_config.txt
+   Compressing: C:\dev\mb\installer\..\run_relay.bat
+   Compressing: C:\dev\mb\installer\..\flash_firmware.bat
+   Compressing: C:\dev\mb\installer\..\install_reaper_bridge.bat
+   Compressing: C:\dev\mb\installer\..\RELEASE_NOTES.md
+   Compressing: C:\dev\mb\installer\..\requirements.txt
+   Compressing: C:\dev\mb\installer\..\scripts\meterbridge_reaper_bridge.lua
+   Compressing: C:\dev\mb\installer\..\scripts\meterbridge_spectrum.jsfx
+   Compressing: C:\dev\mb\installer\..\esp32-firmware\.pio\build\crowpanel_7inch\firmware.bin
+   Compressing: C:\dev\mb\installer\..\esp32-firmware\.pio\build\crowpanel_7inch\bootloader.bin
+   Compressing: C:\dev\mb\installer\..\esp32-firmware\.pio\build\crowpanel_7inch\partitions.bin
+   Compressing: C:\dev\mb\installer\..\docs\device_screen_live.png
+   Compressing: C:\dev\mb\installer\..\docs\index.html
+   Compressing: C:\dev\mb\installer\..\docs\landing_features.png
+   Compressing: C:\dev\mb\installer\..\docs\landing_hero.png
+   Compressing: C:\dev\mb\installer\..\docs\landing_meter.png
+   Compressing: C:\dev\mb\installer\..\docs\remote_panel.png
+   Compressing Setup program executable
+   Updating version info (Setup.exe)
+   Updating manifest (Setup.exe)
+
+Warning: Line 145, Column 3: [Hint] Variable 'ESP32IP' never used
+
+Successful compile (0.672 sec). Resulting Setup program filename is:
+C:\dev\mb\release\rc2_23-June-2026\MeterBridge_v2.0-RC2_Setup.exe

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeterBridge — Professional REAPER Metering & Transport Controller for ESP32</title>
+<meta name="description" content="MeterBridge turns a $40 ESP32 touch display into a professional hardware metering surface for REAPER DAW. Real-time LUFS, RMS, True Peak, spectrum analysis, and full transport control — all on a 7-inch touchscreen.">
+<meta property="og:title" content="MeterBridge v2.0 — Hardware Metering for REAPER">
+<meta property="og:description" content="Real-time LUFS, RMS, True Peak & Spectrum on a dedicated ESP32 touch display. Open source.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ─── Reset & Base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg0: #090b10;
+    --bg1: #0d1117;
+    --bg2: #121820;
+    --bg3: #1a2333;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00aaff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #484f58;
+    --green: #1db954;
+    --red: #e53e3e;
+    --orange: #f97316;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --radius: 12px;
+    --glow: 0 0 40px rgba(0,170,255,0.15);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg0);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: rgba(0,170,255,0.3); }
+
+  /* ─── Scrollbar ────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg1); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  /* ─── Utility ──────────────────────────────────────────────────── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px; font-size: 11px;
+    font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    border: 1px solid; font-family: var(--mono);
+  }
+  .tag-blue  { color: var(--accent);  border-color: rgba(0,170,255,0.3);  background: rgba(0,170,255,0.08); }
+  .tag-green { color: var(--green);   border-color: rgba(29,185,84,0.3);  background: rgba(29,185,84,0.08); }
+  .tag-amber { color: var(--accent4); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+  .tag-purple{ color: #a78bfa;        border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.08); }
+  .section-label {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: clamp(26px,4vw,40px); font-weight: 800; line-height: 1.15; }
+  .section-sub { color: var(--text2); margin-top: 12px; font-size: 17px; max-width: 600px; }
+  .divider { height: 1px; background: var(--border); margin: 80px 0; }
+
+  /* ─── Nav ──────────────────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(9,11,16,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; max-width: 1100px; margin: 0 auto; padding: 0 24px;
+  }
+  .nav-logo {
+    font-family: var(--mono); font-weight: 700; font-size: 16px;
+    color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 10px;
+  }
+  .nav-logo-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-weight: 700; font-size: 13px;
+    padding: 8px 18px; border-radius: 8px; text-decoration: none; transition: filter .2s;
+  }
+  .nav-cta:hover { filter: brightness(1.15); }
+  @media(max-width:640px){ .nav-links { display:none; } }
+
+  /* ─── Hero ─────────────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center;
+    padding-top: 80px; position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,170,255,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 80% 60%, rgba(124,58,237,0.08) 0%, transparent 60%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black 20%, transparent 80%);
+  }
+  .hero-content { position: relative; z-index: 1; padding: 80px 0; }
+  .hero-eyebrow { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .hero-title {
+    font-size: clamp(38px,6vw,72px); font-weight: 900; line-height: 1.05;
+    letter-spacing: -0.02em; margin-bottom: 24px;
+  }
+  .hero-title .accent { color: var(--accent); }
+  .hero-title .accent2 { color: #a78bfa; }
+  .hero-desc { font-size: 18px; color: var(--text2); max-width: 560px; margin-bottom: 40px; line-height: 1.7; }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 60px; }
+  .btn-primary {
+    background: var(--accent); color: #000; font-weight: 700; font-size: 15px;
+    padding: 14px 28px; border-radius: 10px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px; transition: filter .2s, transform .15s;
+  }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--bg2); color: var(--text); font-weight: 600; font-size: 15px;
+    padding: 14px 28px; border-radius: 10px; text-decoration: none; border: 1px solid var(--border);
+    display: inline-flex; align-items: center; gap: 8px; transition: background .2s, transform .15s;
+  }
+  .btn-secondary:hover { background: var(--bg3); transform: translateY(-1px); }
+
+  /* ─── Hero Stats ───────────────────────────────────────────────── */
+  .hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+  .stat { }
+  .stat-num { font-size: 28px; font-weight: 800; font-family: var(--mono); color: var(--text); }
+  .stat-num span { color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* ─── Feature Grid ─────────────────────────────────────────────── */
+  .features { padding: 100px 0; }
+  .features-header { margin-bottom: 56px; }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+  }
+  .feature-card {
+    background: var(--bg1); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px; transition: border-color .3s, transform .2s, box-shadow .3s;
+    position: relative; overflow: hidden;
+  }
+  .feature-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(circle at 50% 0%, rgba(0,170,255,0.06), transparent 70%);
+  }
+  .feature-card:hover { border-color: rgba(0,170,255,0.3); transform: translateY(-3px); box-shadow: var(--glow); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon { font-size: 28px; margin-bottom: 16px; }
+  .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── Meter Visual ─────────────────────────────────────────────── */
+  .demo-section { padding: 100px 0; background: var(--bg1); position: relative; }
+  .demo-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  @media(max-width:768px){ .demo-inner { grid-template-columns: 1fr; } }
+
+  .meter-display {
+    background: var(--bg0); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; font-family: var(--mono);
+  }
+  .meter-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .meter-header-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); }
+  .meter-live { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); }
+  .meter-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  .meter-channels { display: flex; gap: 12px; margin-bottom: 20px; }
+  .meter-bar-wrap { flex: 1; }
+  .meter-ch-label { font-size: 10px; color: var(--text2); text-align: center; margin-bottom: 6px; }
+  .meter-track {
+    height: 180px; background: var(--bg2); border-radius: 6px; position: relative;
+    border: 1px solid var(--border); overflow: hidden;
+    display: flex; flex-direction: column-reverse;
+  }
+  .meter-fill {
+    border-radius: 4px; transition: height 0.1s;
+    background: linear-gradient(to top,
+      #1db954 0%, #1db954 60%,
+      #f59e0b 60%, #f59e0b 80%,
+      #f97316 80%, #f97316 92%,
+      #e53e3e 92%);
+  }
+  .meter-fill-l { height: 72%; animation: meterL 2s ease-in-out infinite alternate; }
+  .meter-fill-r { height: 65%; animation: meterR 2.3s ease-in-out infinite alternate; }
+  @keyframes meterL { 0%{height:72%} 100%{height:85%} }
+  @keyframes meterR { 0%{height:65%} 100%{height:78%} }
+  .meter-peak { position: absolute; width: 100%; height: 2px; background: #fff; top: 10%; left: 0; }
+
+  .meter-lufs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .meter-lufs-cell {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; text-align: center;
+  }
+  .lufs-label { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .lufs-val { font-size: 20px; font-weight: 700; }
+  .lufs-val.green { color: var(--accent3); }
+  .lufs-val.amber { color: var(--accent4); }
+  .lufs-val.accent { color: var(--accent); }
+
+  .transport-row { display: flex; gap: 8px; margin-top: 12px; }
+  .transport-btn {
+    flex: 1; padding: 8px 4px; border-radius: 6px; text-align: center;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid;
+  }
+  .transport-play { background: rgba(29,185,84,0.15); border-color: rgba(29,185,84,0.4); color: var(--green); }
+  .transport-stop { background: rgba(229,62,62,0.15); border-color: rgba(229,62,62,0.4); color: var(--red); }
+  .transport-rec  { background: rgba(229,62,62,0.15); border-color: rgba(229,62,62,0.4); color: var(--red); }
+  .transport-rew  { background: var(--bg2); border-color: var(--border); color: var(--text2); }
+
+  /* ─── How It Works ─────────────────────────────────────────────── */
+  .how-section { padding: 100px 0; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 0; margin-top: 56px; position: relative; }
+  .steps::before {
+    content: ''; position: absolute; top: 36px; left: 10%; right: 10%; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0.3;
+  }
+  @media(max-width:640px){ .steps::before { display:none; } }
+  .step { text-align: center; padding: 20px; position: relative; }
+  .step-num {
+    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 22px; font-weight: 800;
+    border: 2px solid; position: relative; z-index: 1;
+  }
+  .step:nth-child(1) .step-num { border-color: var(--accent);  background: rgba(0,170,255,0.1);  color: var(--accent); }
+  .step:nth-child(2) .step-num { border-color: var(--accent4); background: rgba(245,158,11,0.1); color: var(--accent4); }
+  .step:nth-child(3) .step-num { border-color: var(--accent3); background: rgba(16,185,129,0.1); color: var(--accent3); }
+  .step:nth-child(4) .step-num { border-color: #a78bfa;        background: rgba(167,139,250,0.1);color: #a78bfa; }
+  .step-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── Requirements ─────────────────────────────────────────────── */
+  .req-section { padding: 100px 0; background: var(--bg1); }
+  .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 20px; margin-top: 48px; }
+  .req-card {
+    background: var(--bg0); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px;
+  }
+  .req-card-title { font-weight: 700; font-size: 15px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .req-icon { font-size: 20px; }
+  .req-list { list-style: none; }
+  .req-list li { font-size: 14px; color: var(--text2); padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+  .req-list li:last-child { border: none; }
+  .req-list li::before { content: '→'; color: var(--accent); font-family: var(--mono); flex-shrink: 0; margin-top: 1px; }
+
+  /* ─── Install ──────────────────────────────────────────────────── */
+  .install-section { padding: 100px 0; }
+  .install-steps { margin-top: 48px; counter-reset: install; display: grid; gap: 16px; }
+  .install-step {
+    background: var(--bg1); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px 28px; display: grid; grid-template-columns: 44px 1fr; gap: 20px; align-items: start;
+    counter-increment: install; transition: border-color .2s;
+  }
+  .install-step:hover { border-color: rgba(0,170,255,0.3); }
+  .install-step-num {
+    width: 44px; height: 44px; border-radius: 10px; background: rgba(0,170,255,0.1);
+    border: 1px solid rgba(0,170,255,0.3); display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 800; font-size: 16px; color: var(--accent); flex-shrink: 0;
+  }
+  .install-step-title { font-weight: 700; margin-bottom: 8px; }
+  .install-step-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+  .code-block {
+    background: var(--bg0); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; font-family: var(--mono); font-size: 13px; color: var(--accent3);
+    margin-top: 10px; overflow-x: auto; white-space: nowrap;
+  }
+
+  /* ─── Troubleshoot ─────────────────────────────────────────────── */
+  .trouble-section { padding: 100px 0; background: var(--bg1); }
+  .faq { margin-top: 48px; display: grid; gap: 12px; }
+  .faq-item {
+    background: var(--bg0); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  }
+  .faq-q {
+    padding: 20px 24px; font-weight: 600; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: background .2s; user-select: none;
+  }
+  .faq-q:hover { background: var(--bg2); }
+  .faq-toggle { color: var(--accent); font-size: 20px; font-family: var(--mono); flex-shrink: 0; transition: transform .2s; }
+  .faq-a {
+    padding: 0 24px; max-height: 0; overflow: hidden; transition: max-height .3s ease, padding .3s;
+    font-size: 14px; color: var(--text2); line-height: 1.8;
+  }
+  .faq-item.open .faq-a { max-height: 400px; padding: 0 24px 20px; }
+  .faq-item.open .faq-toggle { transform: rotate(45deg); }
+
+  /* ─── Spec Table ─────────────────────────────────────────────────*/
+  .spec-section { padding: 100px 0; }
+  .spec-table { width: 100%; border-collapse: collapse; margin-top: 40px; }
+  .spec-table th {
+    text-align: left; font-size: 11px; font-family: var(--mono); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2);
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .spec-table td {
+    padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .spec-table tr:last-child td { border: none; }
+  .spec-table tr:hover td { background: var(--bg2); }
+  .spec-table td:first-child { font-weight: 600; color: var(--text2); width: 180px; }
+  .spec-table td:last-child { color: var(--text); }
+
+  /* ─── CTA ──────────────────────────────────────────────────────── */
+  .cta-section {
+    padding: 100px 0; text-align: center;
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0,170,255,0.08) 0%, transparent 70%);
+  }
+  .cta-title { font-size: clamp(28px,4vw,48px); font-weight: 800; margin-bottom: 16px; }
+  .cta-desc { color: var(--text2); font-size: 17px; margin-bottom: 36px; }
+  .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  /* ─── Footer ───────────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border); padding: 40px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    text-align: center;
+  }
+  .footer-logo { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+  .footer-sub { font-size: 13px; color: var(--text2); }
+
+  /* ─── Animations ───────────────────────────────────────────────── */
+  .fade-up {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  .fade-up.visible { opacity: 1; transform: none; }
+
+  /* ─── Spectrum Bars ────────────────────────────────────────────── */
+  .spectrum { display: flex; gap: 3px; align-items: flex-end; height: 60px; margin-top: 16px; }
+  .spec-bar {
+    flex: 1; border-radius: 2px 2px 0 0; min-height: 4px;
+    background: linear-gradient(to top, #00aaff, #7c3aed);
+    animation: specAnim var(--dur, 1s) ease-in-out infinite alternate;
+  }
+  @keyframes specAnim { 0%{height:var(--h0,20%)} 100%{height:var(--h1,60%)} }
+</style>
+</head>
+<body>
+
+<!-- ─── Nav ─────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-dot"></div>
+      MeterBridge
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#requirements">Requirements</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#troubleshoot">Help</a></li>
+    </ul>
+    <a href="https://github.com" class="nav-cta" target="_blank">GitHub →</a>
+  </div>
+</nav>
+
+<!-- ─── Hero ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="container hero-content fade-up visible">
+    <div class="hero-eyebrow">
+      <span class="tag tag-blue">v2.0 Release Candidate</span>
+      <span class="tag tag-green">Open Source</span>
+      <span class="tag tag-purple">ESP32-S3</span>
+    </div>
+    <h1 class="hero-title">
+      Professional metering.<br>
+      <span class="accent">Hardware grade.</span><br>
+      <span class="accent2">Open source.</span>
+    </h1>
+    <p class="hero-desc">
+      MeterBridge turns a $40 ESP32 touch display into a dedicated, always-on hardware metering surface for REAPER. Real-time LUFS, RMS, True Peak, phase correlation, and full transport control — living outside your DAW window.
+    </p>
+    <div class="hero-actions">
+      <a href="#install" class="btn-primary">⚡ Get Started</a>
+      <a href="#features" class="btn-secondary">See Features →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">&gt;<span>60</span></div>
+        <div class="stat-label">FPS sustained</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span>16</span>-band</div>
+        <div class="stat-label">Spectrum analysis</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span>5</span></div>
+        <div class="stat-label">UI themes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">~<span>$40</span></div>
+        <div class="stat-label">Hardware cost</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Live Demo Visual ──────────────────────────────────────────── -->
+<section class="demo-section">
+  <div class="container">
+    <div class="demo-inner">
+      <div class="fade-up">
+        <div class="section-label">Live Display Preview</div>
+        <h2 class="section-title">Everything at a glance</h2>
+        <p class="section-sub">
+          Designed for professional monitoring environments where screen real estate is precious. Meters update at up to 240 Hz. All data visible at arm's length.
+        </p>
+        <br>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;">
+          <span class="tag tag-blue">Portrait Mode</span>
+          <span class="tag tag-green">Landscape Mode</span>
+          <span class="tag tag-amber">5 Themes</span>
+        </div>
+        <div class="spectrum">
+          <div class="spec-bar" style="--h0:15%;--h1:45%;--dur:0.7s;height:15%"></div>
+          <div class="spec-bar" style="--h0:25%;--h1:70%;--dur:0.9s;height:25%"></div>
+          <div class="spec-bar" style="--h0:40%;--h1:85%;--dur:0.8s;height:40%"></div>
+          <div class="spec-bar" style="--h0:55%;--h1:90%;--dur:1.1s;height:55%"></div>
+          <div class="spec-bar" style="--h0:70%;--h1:95%;--dur:0.75s;height:70%"></div>
+          <div class="spec-bar" style="--h0:60%;--h1:88%;--dur:1.2s;height:60%"></div>
+          <div class="spec-bar" style="--h0:45%;--h1:80%;--dur:0.85s;height:45%"></div>
+          <div class="spec-bar" style="--h0:35%;--h1:70%;--dur:1.0s;height:35%"></div>
+          <div class="spec-bar" style="--h0:25%;--h1:55%;--dur:0.95s;height:25%"></div>
+          <div class="spec-bar" style="--h0:18%;--h1:42%;--dur:1.15s;height:18%"></div>
+          <div class="spec-bar" style="--h0:12%;--h1:35%;--dur:0.8s;height:12%"></div>
+          <div class="spec-bar" style="--h0:8%;--h1:28%;--dur:1.05s;height:8%"></div>
+          <div class="spec-bar" style="--h0:6%;--h1:20%;--dur:0.9s;height:6%"></div>
+          <div class="spec-bar" style="--h0:4%;--h1:15%;--dur:1.1s;height:4%"></div>
+          <div class="spec-bar" style="--h0:3%;--h1:10%;--dur:0.85s;height:3%"></div>
+          <div class="spec-bar" style="--h0:2%;--h1:8%;--dur:1.0s;height:2%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:6px;">16-band FFT spectrum · 31Hz – 16kHz</div>
+      </div>
+
+      <div class="meter-display fade-up">
+        <div class="meter-header">
+          <div class="meter-header-title">MASTER BUS · REAPER</div>
+          <div class="meter-live"><div class="meter-live-dot"></div>LIVE</div>
+        </div>
+        <div class="meter-channels">
+          <div class="meter-bar-wrap">
+            <div class="meter-ch-label">L</div>
+            <div class="meter-track">
+              <div class="meter-fill meter-fill-l"></div>
+              <div class="meter-peak"></div>
+            </div>
+          </div>
+          <div class="meter-bar-wrap">
+            <div class="meter-ch-label">R</div>
+            <div class="meter-track">
+              <div class="meter-fill meter-fill-r"></div>
+              <div class="meter-peak" style="top:15%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="meter-lufs-grid">
+          <div class="meter-lufs-cell">
+            <div class="lufs-label">LUFS-M</div>
+            <div class="lufs-val amber">-14.2</div>
+          </div>
+          <div class="meter-lufs-cell">
+            <div class="lufs-label">LUFS-S</div>
+            <div class="lufs-val accent">-14.8</div>
+          </div>
+          <div class="meter-lufs-cell">
+            <div class="lufs-label">LUFS-I</div>
+            <div class="lufs-val green">-14.0</div>
+          </div>
+          <div class="meter-lufs-cell">
+            <div class="lufs-label">TRUE PK</div>
+            <div class="lufs-val" style="color:#f97316">-0.3</div>
+          </div>
+        </div>
+        <div class="transport-row">
+          <div class="transport-btn transport-rew">⏮</div>
+          <div class="transport-btn transport-play">▶ PLAY</div>
+          <div class="transport-btn transport-stop">■ STOP</div>
+          <div class="transport-btn transport-rec">⏺ REC</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Features ──────────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-header fade-up">
+      <div class="section-label">Capabilities</div>
+      <h2 class="section-title">Everything a metering surface should be</h2>
+      <p class="section-sub">Built from scratch for REAPER power users who want real hardware feedback — not another plugin window.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Real-Time LUFS Metering</div>
+        <div class="feature-desc">Momentary, Short-term, and Integrated LUFS with configurable loudness targets. Streaming (−14 LUFS), broadcast (−23 LUFS), podcast, film — one tap to switch.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🎚</div>
+        <div class="feature-title">RMS &amp; True Peak</div>
+        <div class="feature-desc">Dual-channel RMS and True Peak metering with configurable peak hold ballistics. Session MAX readout with color-coded over-threshold alerts.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🌈</div>
+        <div class="feature-title">16-Band Spectrum Analyzer</div>
+        <div class="feature-desc">Complete 16-band FFT spectrum from 31 Hz to 16 kHz, powered by a custom JSFX plugin. Gradient gradient color modes: Classic, Neon, Fire, Rainbow.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-title">Phase Correlation</div>
+        <div class="feature-desc">Real-time stereo phase correlation meter (-1 to +1). Instant visual warning when your mix is approaching mono compatibility issues.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🎛</div>
+        <div class="feature-title">Full Transport Control</div>
+        <div class="feature-desc">Play, Stop, Record, Rewind, Fast Forward — all from the touchscreen. Navigate between markers, toggle track mute/solo/arm without touching your keyboard.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🖥</div>
+        <div class="feature-title">Portrait &amp; Landscape</div>
+        <div class="feature-desc">Rotate the display 90° and the entire UI reflows. Portrait mode shows compact track info with large LUFS readouts. Landscape mode maximizes meter height.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">5 Professional Themes</div>
+        <div class="feature-desc">Codeine Crazy (deep purple), Terminal Green, Arctic Blue, Midnight Amber, and Graphite. All designed for studio ambient light conditions.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">📡</div>
+        <div class="feature-title">WiFi + USB Dual Mode</div>
+        <div class="feature-desc">Connect wirelessly via UDP (sub-50ms latency) or over USB serial for zero-WiFi setups. Automatic fallback. WebSocket-free simplicity.</div>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🔧</div>
+        <div class="feature-title">OTA Firmware Updates</div>
+        <div class="feature-desc">Update firmware wirelessly over WiFi — no USB cable needed after initial flash. Progress is shown live on the display.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ─── How It Works ──────────────────────────────────────────────── -->
+<section class="how-section" id="how-it-works">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">How MeterBridge works</h2>
+      <p class="section-sub">A clean four-layer signal path from REAPER's audio engine to your physical display.</p>
+    </div>
+    <div class="steps">
+      <div class="step fade-up">
+        <div class="step-num">1</div>
+        <div class="step-title">JSFX Plugin</div>
+        <div class="step-desc">A custom JSFX effect on your master bus performs real-time FFT analysis, LUFS integration, and RMS/peak tracking. Zero CPU overhead.</div>
+      </div>
+      <div class="step fade-up">
+        <div class="step-num">2</div>
+        <div class="step-title">Lua Bridge</div>
+        <div class="step-desc">A lightweight REAPER Lua script reads audio metrics and transport state every 20–50 ms, serializes them to JSON, and hands off to the relay.</div>
+      </div>
+      <div class="step fade-up">
+        <div class="step-num">3</div>
+        <div class="step-title">Python Relay</div>
+        <div class="step-desc">The relay bridges REAPER to the ESP32 — either via UDP over WiFi (<5ms) or USB serial. It also receives transport commands going the other way.</div>
+      </div>
+      <div class="step fade-up">
+        <div class="step-num">4</div>
+        <div class="step-title">ESP32 Display</div>
+        <div class="step-desc">The ESP32-S3 renders all meters, spectrum, and transport state on the 7" touch display at up to 240 FPS using LVGL with GPU-accelerated drawing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ─── Requirements ──────────────────────────────────────────────── -->
+<section class="req-section" id="requirements">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Requirements</div>
+      <h2 class="section-title">What you need</h2>
+      <p class="section-sub">Designed to be as accessible as possible. If you run REAPER, you're 95% of the way there.</p>
+    </div>
+    <div class="req-grid">
+      <div class="req-card fade-up">
+        <div class="req-card-title"><span class="req-icon">🖥</span> Hardware</div>
+        <ul class="req-list">
+          <li>
+            <strong>Recommended hardware:</strong>
+            <a href="https://www.amazon.com/ELECROW-ESP32-Display-Compatible-MicroPython/dp/B0G1RYBZNL/"
+               target="_blank" rel="noopener"
+               style="color:var(--accent);text-decoration:none;">
+              Elecrow CrowPanel 7&quot; ESP32-S3 HMI Display
+            </a>
+            — the exact board this project was developed and tested on.
+          </li>
+          <li>Any ESP32-S3 with 7&quot; RGB touch LCD (800×480) and GT911 touch controller</li>
+          <li>USB-C cable for initial flash</li>
+          <li>WiFi 2.4 GHz network (optional — USB works too)</li>
+          <li>Power supply via USB (5V/1A minimum)</li>
+        </ul>
+
+      </div>
+      <div class="req-card fade-up">
+        <div class="req-card-title"><span class="req-icon">🎛</span> Software</div>
+        <ul class="req-list">
+          <li>REAPER DAW (any recent version)</li>
+          <li>Python 3.8+ (for the relay)</li>
+          <li>PlatformIO (for firmware build — included in script)</li>
+          <li>Windows 10/11 (macOS/Linux with minor adjustments)</li>
+          <li>SWS Extension for REAPER (recommended)</li>
+        </ul>
+      </div>
+      <div class="req-card fade-up">
+        <div class="req-card-title"><span class="req-icon">💰</span> Estimated Cost</div>
+        <ul class="req-list">
+          <li>CrowPanel 7" board: ~$35–50 USD</li>
+          <li>USB-C cable: ~$5</li>
+          <li>Software: 100% free & open source</li>
+          <li>Total: ~$40–55 USD</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Spec Table ────────────────────────────────────────────────── -->
+<section class="spec-section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Technical Specifications</div>
+      <h2 class="section-title">Under the hood</h2>
+    </div>
+    <table class="spec-table fade-up">
+      <tr><th>Spec</th><th>Detail</th></tr>
+      <tr><td>MCU</td><td>ESP32-S3 @ 240 MHz dual-core (Xtensa LX7)</td></tr>
+      <tr><td>Display</td><td>7" RGB TFT, 800×480, 24-bit color, capacitive touch</td></tr>
+      <tr><td>PSRAM</td><td>8 MB OPI PSRAM (draw buffers + screenshot cache)</td></tr>
+      <tr><td>UI Framework</td><td>LVGL v8.3 with ESP32-S3 GPU acceleration</td></tr>
+      <tr><td>Target FPS</td><td>60 FPS sustained · 120–240 FPS unconstrained</td></tr>
+      <tr><td>Network</td><td>802.11 b/g/n Wi-Fi · UDP transport (port 4210)</td></tr>
+      <tr><td>Update rate</td><td>20–2500 ms configurable (default 50 ms = 20/sec)</td></tr>
+      <tr><td>Loudness standards</td><td>EBU R128 · ATSC A/85 · AES-17 · Netflix · Spotify targets</td></tr>
+      <tr><td>Spectrum bands</td><td>16 bands · 31 Hz – 16 kHz · FFT size 256–2048</td></tr>
+      <tr><td>Peak hold</td><td>Configurable 100ms – ∞ (forever)</td></tr>
+      <tr><td>Firmware update</td><td>USB serial (primary) · OTA WiFi (secondary)</td></tr>
+      <tr><td>Screenshot API</td><td>HTTP BMP server on port 8099 (browser accessible)</td></tr>
+      <tr><td>Remote control API</td><td>HTTP REST on port 8080 · HTML panel included</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ─── Install ───────────────────────────────────────────────────── -->
+<section class="install-section" id="install">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Installation</div>
+      <h2 class="section-title">Up and running in minutes</h2>
+      <p class="section-sub">The entire setup is driven by batch scripts — no command line needed.</p>
+    </div>
+    <div class="install-steps">
+      <div class="install-step fade-up">
+        <div class="install-step-num">1</div>
+        <div>
+          <div class="install-step-title">Download &amp; extract MeterBridge</div>
+          <div class="install-step-desc">Clone the repository or download the ZIP from GitHub. Extract anywhere — no spaces in the path preferred (e.g. <code>C:\meterbridge</code>).</div>
+          <div class="code-block">git clone https://github.com/your-repo/meterbridge.git</div>
+        </div>
+      </div>
+      <div class="install-step fade-up">
+        <div class="install-step-num">2</div>
+        <div>
+          <div class="install-step-title">Connect your ESP32 via USB and run build_and_run.bat</div>
+          <div class="install-step-desc">Double-click <strong>build_and_run.bat</strong> in the root folder. It auto-installs PlatformIO, builds the firmware, detects your COM port, and flashes the ESP32. Then go grab a coffee ☕</div>
+          <div class="code-block">build_and_run.bat  ← just double-click this</div>
+        </div>
+      </div>
+      <div class="install-step fade-up">
+        <div class="install-step-num">3</div>
+        <div>
+          <div class="install-step-title">Install the REAPER bridge scripts</div>
+          <div class="install-step-desc">Double-click <strong>install_reaper_bridge.bat</strong>. This copies the Lua script and JSFX plugin to your REAPER scripts folder automatically.</div>
+        </div>
+      </div>
+      <div class="install-step fade-up">
+        <div class="install-step-num">4</div>
+        <div>
+          <div class="install-step-title">Configure WiFi on the display</div>
+          <div class="install-step-desc">On first boot, MeterBridge creates a WiFi AP called <strong>MeterBridge-Setup</strong>. Connect to it from your phone or laptop, select your network, enter the password. Done.</div>
+        </div>
+      </div>
+      <div class="install-step fade-up">
+        <div class="install-step-num">5</div>
+        <div>
+          <div class="install-step-title">Start the relay and open REAPER</div>
+          <div class="install-step-desc">Double-click <strong>run_relay.bat</strong>. Then in REAPER, add the MeterBridge JSFX plugin to your master track and run the Lua bridge script via the Actions menu. Meters appear instantly.</div>
+          <div class="code-block">run_relay.bat  ← runs the Python bridge</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Troubleshoot ───────────────────────────────────────────────── -->
+<section class="trouble-section" id="troubleshoot">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Troubleshooting</div>
+      <h2 class="section-title">Known issues &amp; fixes</h2>
+      <p class="section-sub">Every problem we've seen in the wild, documented with a clear fix.</p>
+    </div>
+    <div class="faq fade-up">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>The display stays black after flashing</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          This almost always means the firmware was built for the wrong board variant. Ensure you're using the <strong>crowpanel_7inch</strong> PlatformIO environment. Also try holding the BOOT button on the board, then pressing RESET before clicking upload. Some boards need manual boot mode entry.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Meters aren't receiving data / connection light is red</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          Check that: (1) The relay script (<code>run_relay.bat</code>) is running, (2) the JSFX plugin is on the master track and active, (3) the Lua bridge script is running in REAPER (Actions → Show action list → find MeterBridge and run it), (4) the ESP32 and your PC are on the same WiFi network. The display shows its IP address in the status bar — ping it from your PC to verify connectivity.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>WiFi won't connect / keeps falling back to AP mode</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          The ESP32 only supports 2.4 GHz WiFi — 5 GHz networks will never appear in the scan. Also confirm the password has no special characters that might encode incorrectly. If the SSID contains spaces or Unicode characters, try a simpler hotspot name. You can reset WiFi credentials by going to Settings → WiFi on the display, or by sending <code>NVS_CLEAR</code> over USB serial.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Frame rate is low / UI feels sluggish</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          Ensure PSRAM draw buffers allocated successfully — check the serial log for <em>[DISP] 200-row PSRAM draw buffers allocated (full speed)</em>. If you see the fallback warning, the board may have a different PSRAM configuration. Also try reducing the update rate in Settings from 50 ms to 100 ms. For OPI PSRAM boards, confirm <code>board_build.arduino.memory_type = qio_opi</code> in platformio.ini.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Touch input is inaccurate or not registering</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          Most CrowPanel 7" boards use a GT911 capacitive touch controller over I2C. If touch seems offset, try rotating the display 180° in Settings → Display → Rotation. For V3.0 boards with the PCA9557 IO expander, ensure the firmware detected it on startup (look for <em>[HW] PCA9557: FOUND (V3.0)</em> in serial output).
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>OTA firmware update fails</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          OTA is considered experimental. If it fails, use the wired USB method: run <code>flash_esp32.bat</code> or run <code>pio run -e crowpanel_7inch --target upload</code> from the esp32-firmware directory. OTA failures are usually caused by network instability during the large ~1 MB transfer.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>JSFX plugin isn't doing anything / spectrum is flat</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+          Confirm the JSFX plugin (<code>meterbridge_spectrum.jsfx</code>) is installed in your REAPER Effects folder and appears in the FX chain of your master bus. It must be <strong>before</strong> any limiting/clipping at the master bus level to get accurate readings. Also ensure the plugin is not bypassed (green checkbox in the FX chain).
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ───────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label" style="justify-content:center;display:flex;margin-bottom:20px;">Open Source · Free Forever</div>
+      <h2 class="cta-title">Ready to meter like a pro?</h2>
+      <p class="cta-desc">Join the community of REAPER engineers who've taken their metering off-screen.</p>
+      <div class="cta-actions">
+        <a href="#install" class="btn-primary">⚡ Get MeterBridge</a>
+        <a href="https://github.com" class="btn-secondary" target="_blank">⭐ Star on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Footer ───────────────────────────────────────────────────── -->
+<footer>
+  <div class="container" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="footer-logo">⚡ MeterBridge v2.0</div>
+    <div class="footer-sub">Built with ❤️ for REAPER engineers. Open source. No cloud. No subscription.</div>
+    <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">ESP32-S3 · LVGL · JSFX · Made to ship.</div>
+  </div>
+</footer>
+
+<script>
+  /* ─── FAQ accordion ─── */
+  function toggleFaq(el) {
+    const item = el.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  /* ─── Scroll-triggered fade-up animations ─── */
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

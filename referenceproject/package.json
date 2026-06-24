@@ -1,0 +1,36 @@
+{
+    "name": "studiobeacon",
+    "version": "1.0.0",
+    "description": "Modern studio status display for external monitors",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder",
+        "pack": "electron-builder --dir"
+    },
+    "author": "Falcon Studios",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "dependencies": {
+        "ws": "^8.16.0"
+    },
+    "build": {
+        "appId": "com.falconstudios.studiobeacon",
+        "productName": "StudioBeacon",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!troubleshooting/**",
+            "!installer/**",
+            "!.github/**"
+        ],
+        "win": {
+            "target": "dir"
+        }
+    }
+}

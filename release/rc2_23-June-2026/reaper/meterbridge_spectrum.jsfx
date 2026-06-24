@@ -1,0 +1,179 @@
+desc:MeterBridge Spectrum Analyzer
+// Analyze audio and export 16-band levels via gmem[] shared memory
+// Band centers: 31, 44, 63, 88, 125, 177, 250, 354, 500, 707, 1k, 1.4k, 2k, 4k, 8k, 16k
+//
+// gmem[] layout (shared with Lua bridge):
+//   gmem[0]  = magic sentinel (0x4D425350 = "MBSP")
+//   gmem[1]  = num_bands (16)
+//   gmem[2]  through gmem[17] = band dB levels (-60 to 0)
+
+//tags: analysis spectrum FFT meterbridge
+//author: FalconEYE Software Dev
+
+slider1:decay_db=12<1,60,1>Decay Rate (dB/sec)
+slider2:fft_size_idx=2<0,3,1{256,512,1024,2048}>FFT Size
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+options:gmem=meterbridge_spectrum
+
+@init
+
+// ── Local memory layout (per-instance, separate from gmem) ─────
+// 0-15      : band_freqs  (16 center frequencies)
+// 100-116   : band_edges  (17 edge frequencies)
+// 200-215   : band_levels (16 smoothed dB values)
+// 300-4395  : fft_buf     (complex pairs, max 2048*2)
+// 5000-7047 : window_buf  (Hanning window, max 2048)
+
+// Write sentinel + band count to gmem for Lua bridge
+gmem[0] = $x4D425350;  // "MBSP" magic sentinel
+gmem[1] = 16;
+
+// 16 band center frequencies
+num_bands = 16;
+band_freqs = 0;
+band_freqs[0]  = 31;   band_freqs[1]  = 44;
+band_freqs[2]  = 63;   band_freqs[3]  = 88;
+band_freqs[4]  = 125;  band_freqs[5]  = 177;
+band_freqs[6]  = 250;  band_freqs[7]  = 354;
+band_freqs[8]  = 500;  band_freqs[9]  = 707;
+band_freqs[10] = 1000; band_freqs[11] = 1414;
+band_freqs[12] = 2000; band_freqs[13] = 4000;
+band_freqs[14] = 8000; band_freqs[15] = 16000;
+
+// Band edge frequencies (geometric mean between adjacent centers)
+band_edges = 100;
+i = 0;
+loop(num_bands + 1,
+  i == 0 ? (
+    band_edges[i] = band_freqs[0] * 0.707;
+  ) : i == num_bands ? (
+    band_edges[i] = min(srate * 0.48, band_freqs[num_bands - 1] * 1.414);
+  ) : (
+    band_edges[i] = sqrt(band_freqs[i - 1] * band_freqs[i]);
+  );
+  i += 1;
+);
+
+// Band levels (smoothed, in dB) — init to silence
+band_levels = 200;
+i = 0;
+loop(num_bands,
+  band_levels[i] = -60;
+  i += 1;
+);
+
+// FFT buffer (complex pairs: real at 2k, imag at 2k+1)
+fft_buf_size = 1024;
+fft_buf = 300;
+fft_buf_pos = 0;
+
+// Hanning window buffer (beyond fft_buf range to avoid overlap)
+window_buf = 5000;
+
+// Export throttle
+export_counter = 0;
+export_interval = 1024;
+
+function apply_fft_size() local(i)
+(
+  fft_size_idx == 0 ? fft_buf_size = 256 :
+  fft_size_idx == 1 ? fft_buf_size = 512 :
+  fft_size_idx == 2 ? fft_buf_size = 1024 :
+  fft_buf_size = 2048;
+
+  // Recompute Hanning window
+  i = 0;
+  loop(fft_buf_size,
+    window_buf[i] = 0.5 * (1 - cos(2 * $pi * i / fft_buf_size));
+    i += 1;
+  );
+
+  // Recompute band edges for current sample rate
+  i = 0;
+  loop(num_bands + 1,
+    i == 0 ? (
+      band_edges[i] = band_freqs[0] * 0.707;
+    ) : i == num_bands ? (
+      band_edges[i] = min(srate * 0.48, band_freqs[num_bands - 1] * 1.414);
+    ) : (
+      band_edges[i] = sqrt(band_freqs[i - 1] * band_freqs[i]);
+    );
+    i += 1;
+  );
+
+  fft_buf_pos = 0;
+  export_interval = max(fft_buf_size, 1024);
+);
+
+apply_fft_size();
+
+@slider
+apply_fft_size();
+
+@sample
+// Collect mono mix into FFT buffer (windowed)
+mono = (spl0 + spl1) * 0.5;
+fft_buf[fft_buf_pos * 2]     = mono * window_buf[fft_buf_pos];  // real
+fft_buf[fft_buf_pos * 2 + 1] = 0;                                // imaginary
+fft_buf_pos += 1;
+
+fft_buf_pos >= fft_buf_size ? (
+  fft_buf_pos = 0;
+
+  // Run FFT
+  fft(fft_buf, fft_buf_size);
+  fft_permute(fft_buf, fft_buf_size);
+
+  // Compute magnitude spectrum and map to bands
+  freq_per_bin = srate / fft_buf_size;
+  decay_per_block = decay_db * fft_buf_size / srate;
+
+  b = 0;
+  loop(num_bands,
+    lo_freq = band_edges[b];
+    hi_freq = band_edges[b + 1];
+    lo_bin = max(1, floor(lo_freq / freq_per_bin));
+    hi_bin = min(fft_buf_size / 2, ceil(hi_freq / freq_per_bin));
+
+    peak_mag = 0;
+    k = lo_bin;
+    loop(max(1, hi_bin - lo_bin),
+      re = fft_buf[k * 2];
+      im = fft_buf[k * 2 + 1];
+      mag = sqrt(re * re + im * im) / fft_buf_size * 2;
+      peak_mag = max(peak_mag, mag);
+      k += 1;
+    );
+
+    // Convert to dB
+    new_db = peak_mag > 0.000001 ? 20 * log10(peak_mag) : -60;
+    new_db = max(-60, min(0, new_db));
+
+    // Smooth: instant attack, slow release
+    new_db > band_levels[b] ? (
+      band_levels[b] = new_db;
+    ) : (
+      band_levels[b] = max(new_db, band_levels[b] - decay_per_block);
+    );
+
+    b += 1;
+  );
+);
+
+// Export band levels to gmem[] periodically
+export_counter += 1;
+export_counter >= export_interval ? (
+  export_counter = 0;
+  i = 0;
+  loop(num_bands,
+    gmem[2 + i] = band_levels[i];
+    i += 1;
+  );
+);
+
+// Audio passes through unmodified (spl0/spl1 not written)

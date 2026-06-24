@@ -1,0 +1,8 @@
+# MeterBridge Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Serial port communication (optional — only needed for USB/Serial mode)
+pyserial>=3.5
+
+# urllib3 and requests included in stdlib/standard pip for OTA checks (future)
+# No other external dependencies required for UDP mode

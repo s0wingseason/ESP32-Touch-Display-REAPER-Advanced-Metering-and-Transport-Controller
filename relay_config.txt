@@ -1,0 +1,4 @@
+esp32_ip=192.168.1.180
+update_ms=50
+# ^^^ Replace 0.0.0.0 with your ESP32's IP address (shown on the display after WiFi connects)
+# The relay will also auto-discover your ESP32 via broadcast if left as 0.0.0.0

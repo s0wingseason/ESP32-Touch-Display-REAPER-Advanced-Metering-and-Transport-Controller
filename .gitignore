@@ -1,0 +1,47 @@
+
+# ── Agent rules (contain API keys — NEVER commit) ───────────────────────────
+.agents/
+
+# ── VST Plugin ──────────────────────────────────────────────────────────────
+vst-plugin/_deps/juce-src
+vst-plugin/CMakeFiles/
+vst-plugin/CMakeCache.txt
+vst-plugin/_deps/
+
+# ── ESP32 / PlatformIO ───────────────────────────────────────────────────────
+esp32-firmware/.pio/
+esp32-firmware/*.log
+esp32-firmware/*.txt
+
+# ── Video / large media ──────────────────────────────────────────────────────
+*.mp4
+*.MP4
+*.MOV
+*.mov
+*.avi
+*.mkv
+
+# ── Scratch / temp files at repo root ────────────────────────────────────────
+*.log
+*.bmp
+frames/
+frame_*.png
+__pycache__/
+*.pyc
+hs_err_pid*.log
+replay_pid*.log
+iss_out*.txt
+iss_err*.txt
+iss_readable.txt
+list.txt
+list_long.txt
+tmp_*.ps1
+
+# ── Release archives (use GitHub Releases instead) ────────────────────────────
+release/**/*.zip
+
+# ── Electron / Node (referenceproject) ──────────────────────────────────────
+referenceproject/dist/
+referenceproject/node_modules/
+referenceproject/installer/output/
+referenceproject/installer/installer/output/

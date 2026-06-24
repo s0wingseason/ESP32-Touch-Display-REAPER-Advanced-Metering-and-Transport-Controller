@@ -1,0 +1,70 @@
+﻿[HARNESS] Connecting to COM3 @ 115200...
+
+├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É MeterBridge Test Harness ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É
+
+PASS T01 PING responds PONG  |  PONG
+PASS T02 STATUS returns valid JSON  |  {'heap': 279872, 'psram': 7426587, 'wifi': 1, 'peak_l': -60.0, 'peak_r': -60.0, 'rms_l': -60.0, 'rms_r': -60.0, 'lufs_i': -70.0, 'playing': 0, 'rotation': 0, 'theme': 0, 'peak_hold_ms': 2500, 'conn_mode': 0}
+PASS T03 Heap healthy  |  279,872 bytes free
+PASS T04 PSRAM available  |  7,426,587 bytes free
+PASS T05 INJECT_METER accepted  |  INJECTED:-12.5,-11.0
+WARN T06 Injected meter data (WiFi active ΓÇö UDP overwrite expected)  |  peak_l=-60.0
+PASS T07 INJECT_PLAY  |  PLAY_SET
+PASS T08 INJECT_STOP  |  STOP_SET
+PASS T09 SET_PEAK:1500ms  |  PEAK_SET:1500
+PASS T10 Unknown command returns ERR  |  ERR:unknown cmd 'GARBAGE_CMD'
+PASS T16 SMETER serial meter injection  |  SM:OK
+PASS T17 STRANSPORT serial transport injection  |  ST:OK
+PASS T18 STRACK serial track injection  |  STRK:OK
+PASS T19 SPROJECT serial project injection  |  SPRJ:OK
+PASS T09b SET_PEAK restore 2500ms  |  PEAK_SET:2500
+PASS T20 SET_CONN_MODE:1 (Serial)  |  CONN_MODE_SET:1 (Serial)
+PASS T21 SET_CONN_MODE:2 (Both)  |  CONN_MODE_SET:2 (Both)
+PASS T22 STATUS contains conn_mode field  |  conn_mode=2
+PASS T22b SET_CONN_MODE:0 restore  |  CONN_MODE_SET:0 (UDP)
+
+  [T11] Cycling rotation to 1 (reboot expected)...
+PASS T11 Rotation=1 reboot completed
+PASS T11b Rotation=1 persisted in NVS  |  rotation=1
+
+  [T12] Restoring rotation to 0...
+PASS T12 Rotation=0 restored
+
+  [T13] Cycling theme to 2 (Retro LED)...
+PASS T13 Theme=2 persisted after reboot  |  theme=2
+
+  [T14] Restoring theme to 0 (Codeine Crazy)...
+PASS T14 Theme=0 restored
+
+  [T15] NVS_CLEAR + verify defaults...
+PASS T15 NVS defaults restored after clear
+
+├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É Results ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É
+  PASS T01 PING responds PONG
+  PASS T02 STATUS returns valid JSON
+  PASS T03 Heap healthy
+  PASS T04 PSRAM available
+  PASS T05 INJECT_METER accepted
+  WARN T06 Injected meter data (WiFi active ΓÇö UDP overwrite expected)
+  PASS T07 INJECT_PLAY
+  PASS T08 INJECT_STOP
+  PASS T09 SET_PEAK:1500ms
+  PASS T10 Unknown command returns ERR
+  PASS T16 SMETER serial meter injection
+  PASS T17 STRANSPORT serial transport injection
+  PASS T18 STRACK serial track injection
+  PASS T19 SPROJECT serial project injection
+  PASS T09b SET_PEAK restore 2500ms
+  PASS T20 SET_CONN_MODE:1 (Serial)
+  PASS T21 SET_CONN_MODE:2 (Both)
+  PASS T22 STATUS contains conn_mode field
+  PASS T22b SET_CONN_MODE:0 restore
+  PASS T11 Rotation=1 reboot completed
+  PASS T11b Rotation=1 persisted in NVS
+  PASS T12 Rotation=0 restored
+  PASS T13 Theme=2 persisted after reboot
+  PASS T14 Theme=0 restored
+  PASS T15 NVS defaults restored after clear
+
+  24/25 passed  |  0 failed  |  1 warnings
+├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É
+
